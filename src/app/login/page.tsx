@@ -130,7 +130,7 @@ export default function LoginPage() {
               color: "#575757",
             }}
           >
-            Glad to see you again. Log in to your account.
+            Glad to see you again. Log in to your accounts.
           </p>
         </div>
 
