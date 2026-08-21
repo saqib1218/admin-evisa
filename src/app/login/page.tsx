@@ -4,17 +4,26 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/utils/AuthContext";
 import adminbg from "@/images/adminbg.svg";
 import ev1 from "@/images/ev1.svg";
 import logo from "@/images/logo.svg";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { admin, loading, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [keepLogin, setKeepLogin] = useState(false);
+  const [loadingBtn, setLoadingBtn] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!loading && admin) {
+      router.push("/dashboard");
+    }
+  }, [admin, loading, router]);
 
   useEffect(() => {
     if (toast) {
@@ -23,12 +32,21 @@ export default function LoginPage() {
     }
   }, [toast]);
 
-  const handleLogin = () => {
-    if (email === "admin@gmail.com" && password === "admin123") {
+  const handleLogin = async () => {
+    if (!email.trim() || !password.trim()) {
+      setToast({ type: "error", message: "Please enter email and password" });
+      return;
+    }
+
+    setLoadingBtn(true);
+    try {
+      await login(email, password);
       setToast({ type: "success", message: "Login successful!" });
       setTimeout(() => router.push("/dashboard"), 1000);
-    } else {
-      setToast({ type: "error", message: "Invalid credentials" });
+    } catch (err: any) {
+      setToast({ type: "error", message: err.message || "Invalid credentials" });
+    } finally {
+      setLoadingBtn(false);
     }
   };
 
@@ -265,19 +283,20 @@ export default function LoginPage() {
         {/* Login button */}
         <button
           onClick={handleLogin}
+          disabled={loadingBtn}
           className="flex items-center justify-center w-full"
           style={{
             height: "48px",
             borderRadius: "999px",
-            background: "var(--primary)",
+            background: loadingBtn ? "#D9D9D9" : "var(--primary)",
             color: "#FFFFFF",
             fontSize: "16px",
             fontWeight: 500,
-            cursor: "pointer",
+            cursor: loadingBtn ? "not-allowed" : "pointer",
             border: "none",
           }}
         >
-          Login
+          {loadingBtn ? "Logging in..." : "Login"}
         </button>
         </div>
       </div>

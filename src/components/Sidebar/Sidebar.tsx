@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { LayoutDashboard, NotepadText, DollarSign, Settings, LogOut } from "lucide-react";
+import { useAuth } from "@/utils/AuthContext";
 import ev1 from "@/images/ev1.svg";
 
 const navItems = [
@@ -16,10 +17,7 @@ const navItems = [
 export default function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-
-  const handleLogout = () => {
-    router.push("/login");
-  };
+  const { admin, logout } = useAuth();
 
   return (
     <aside
@@ -140,7 +138,7 @@ export default function Sidebar() {
               color: "#0F0F0F",
             }}
           >
-            Admin
+            {admin?.name || "Admin"}
           </span>
           <span
             style={{
@@ -151,7 +149,7 @@ export default function Sidebar() {
               color: "#575757",
             }}
           >
-            admin@gmail.com
+            {admin?.email || ""}
           </span>
         </div>
       </div>
@@ -161,7 +159,7 @@ export default function Sidebar() {
 
       {/* Logout */}
       <div
-        onClick={handleLogout}
+        onClick={logout}
         className="flex items-center"
         style={{
           gap: "12px",
