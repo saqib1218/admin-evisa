@@ -95,6 +95,9 @@ export default function ApplicationDetailsPage() {
     try {
       const data = await api.getApplicationDetails(id);
       setDetails(data);
+      if (data?.status) {
+        setOutcomeStatus(data.status);
+      }
     } catch (err) {
       console.error("Failed to fetch application details:", err);
     } finally {
@@ -150,7 +153,6 @@ export default function ApplicationDetailsPage() {
       setVisaDocumentName("");
       setVisaDocumentFile(null);
       setMessageToApplicant("");
-      setOutcomeStatus("");
       fetchDetails();
     } catch (err: any) {
       setOutcomeMessage({ type: "error", text: err?.message || "Failed to save outcome" });
