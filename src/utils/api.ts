@@ -238,4 +238,24 @@ export const api = {
     }
     return false;
   },
+
+  async getNotifications() {
+    return request("/notifications");
+  },
+
+  async getUnreadNotificationCount() {
+    return request("/notifications/unread-count");
+  },
+
+  async markNotificationAsRead(id: string) {
+    return request(`/notifications/${id}/read`, { method: "PATCH" });
+  },
+
+  async markAllNotificationsAsRead() {
+    return request("/notifications/read-all", { method: "PATCH" });
+  },
+
+  getNotificationStreamUrl() {
+    return `${API_URL}/notifications/stream`;
+  },
 };

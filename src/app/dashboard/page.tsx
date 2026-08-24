@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Bell,
   DollarSign,
   User,
   NotepadText,
@@ -16,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { api } from "@/utils/api";
+import { api, getAccessToken } from "@/utils/api";
+import NotificationBell from "@/components/NotificationBell/NotificationBell";
 
 interface Application {
   id: string;
@@ -114,6 +114,31 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchApplications();
+  }, [fetchApplications]);
+
+  // SSE: auto-refetch when new application notification arrives
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) return;
+
+    const streamUrl = api.getNotificationStreamUrl();
+    const es = new EventSource(`${streamUrl}?token=${encodeURIComponent(token)}`);
+
+    es.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload.type === "notification" && payload.data?.type === "application_submitted") {
+          fetchApplications();
+          fetchDashboardStats();
+        }
+      } catch {
+        // ignore
+      }
+    };
+
+    return () => {
+      es.close();
+    };
   }, [fetchApplications]);
 
   const handleDelete = async () => {
@@ -225,20 +250,7 @@ export default function DashboardPage() {
             Dashboard
           </span>
           <div className="flex items-center" style={{ gap: "12px" }}>
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                border: "1px solid #D9D9D9",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Bell style={{ width: "20px", height: "20px", color: "#575757" }} />
-            </div>
+            <NotificationBell />
             <div style={{ width: "1px", height: "24px", background: "#D9D9D9" }} />
             <div className="flex items-center" style={{ gap: "8px" }}>
               <div
