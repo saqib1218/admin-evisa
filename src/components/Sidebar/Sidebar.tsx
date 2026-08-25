@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutDashboard, NotepadText, DollarSign, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, NotepadText, DollarSign, Settings, LogOut, MessageSquare } from "lucide-react";
 import { useAuth } from "@/utils/AuthContext";
 import ev1 from "@/images/ev1.svg";
 
@@ -12,6 +12,7 @@ const navItems = [
   { icon: NotepadText, label: "Applications", href: "/dashboard/applications" },
   { icon: DollarSign, label: "Payments", href: "/dashboard/payments" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
+  { icon: MessageSquare, label: "Queries", href: "/dashboard/settings/queries" },
 ];
 
 export default function Sidebar() {
