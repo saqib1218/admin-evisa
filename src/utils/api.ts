@@ -271,4 +271,45 @@ export const api = {
   async getQueryById(id: string) {
     return request(`/queries/${id}`);
   },
+
+  async getPackages() {
+    return request("/packages");
+  },
+
+  async createPackage(data: {
+    key: string;
+    label: string;
+    fee: number;
+    processingFee: number;
+    processingTime: string;
+    badge?: string | null;
+    sortOrder?: number;
+  }) {
+    return request("/packages", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updatePackage(id: string, data: {
+    key?: string;
+    label?: string;
+    fee?: number;
+    processingFee?: number;
+    processingTime?: string;
+    badge?: string | null;
+    sortOrder?: number;
+    isActive?: boolean;
+  }) {
+    return request(`/packages/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deletePackage(id: string) {
+    return request(`/packages/${id}`, {
+      method: "DELETE",
+    });
+  },
 };

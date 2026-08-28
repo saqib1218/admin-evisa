@@ -31,7 +31,7 @@ const badgeColors: Record<string, { bg: string; color: string }> = {
   Fastest: { bg: "#EFF4F9", color: "#2D76B5" },
 };
 
-export default function SettingsPage() {
+export default function PackagesPage() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);

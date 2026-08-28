@@ -32,6 +32,7 @@ const statusConfig: Record<string, { bg: string; label: string }> = {
   pending: { bg: "#D9D9D9", label: "Pending" },
   rejected: { bg: "#DF1C41", label: "Rejected" },
   accepted: { bg: "#28806F", label: "Accepted" },
+  approved: { bg: "#28806F", label: "Approved" },
   inprogress: { bg: "#2D76B5", label: "In Progress" },
 };
 

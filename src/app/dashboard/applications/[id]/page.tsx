@@ -59,6 +59,7 @@ const statusTabs = [
   { key: "pending", label: "Pending", color: "#F97316" },
   { key: "inprogress", label: "In Progress", color: "#2D76B5" },
   { key: "accepted", label: "Accepted", color: "#28806F" },
+  { key: "approved", label: "Approved", color: "#28806F" },
   { key: "rejected", label: "Rejected", color: "#DF1C41" },
 ];
 
