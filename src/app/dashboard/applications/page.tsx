@@ -18,14 +18,20 @@ import NotificationBell from "@/components/NotificationBell/NotificationBell";
 interface Application {
   id: string;
   applicant_id: string;
+  order_applicant_id: string;
   reference_number: string;
-  status: string;
   processing_type: string;
   created_at: string;
   submit_date: string | null;
-  customer_name: string;
+  applicant_pk: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  applicant_status: string;
+  fee_amount: string | null;
   grand_total: string;
   payment_status: boolean;
+  applicant_count: string;
 }
 
 const statusConfig: Record<string, { bg: string; label: string }> = {
@@ -120,11 +126,11 @@ export default function ApplicationsPage() {
   };
 
   const getCustomerName = (app: Application) => {
-    return app.customer_name || app.applicant_id || "Unknown";
+    return `${app.first_name || ""} ${app.last_name || ""}`.trim() || "Unknown";
   };
 
   const getTotal = (app: Application) => {
-    const total = parseFloat(app.grand_total || "0");
+    const total = parseFloat(app.fee_amount || app.grand_total || "0");
     return `$${total.toFixed(2)}`;
   };
 
@@ -386,9 +392,9 @@ export default function ApplicationsPage() {
                 </tr>
               ) : (
                 applications.map((app) => {
-                  const statusInfo = getStatusStyle(app.status);
+                  const statusInfo = getStatusStyle(app.applicant_status);
                   return (
-                    <tr key={app.id} style={{ borderBottom: "1px solid #E5E5E5" }}>
+                    <tr key={app.applicant_pk} style={{ borderBottom: "1px solid #E5E5E5" }}>
                       {/* Reference */}
                       <td
                         style={{
@@ -404,7 +410,7 @@ export default function ApplicationsPage() {
                           color: "#2D76B5",
                         }}
                       >
-                        {app.reference_number || app.applicant_id}
+                        {app.reference_number || app.order_applicant_id}
                       </td>
                       {/* Applicant Id */}
                       <td
@@ -545,7 +551,7 @@ export default function ApplicationsPage() {
                         }}
                       >
                         <button
-                          onClick={() => setOpenMenuId(openMenuId === app.id ? null : app.id)}
+                          onClick={() => setOpenMenuId(openMenuId === app.applicant_pk ? null : app.applicant_pk)}
                           style={{
                             background: "none",
                             border: "none",
@@ -557,7 +563,7 @@ export default function ApplicationsPage() {
                         >
                           <MoreVertical style={{ width: "20px", height: "20px", color: "#575757" }} />
                         </button>
-                        {openMenuId === app.id && (
+                        {openMenuId === app.applicant_pk && (
                           <div
                             ref={menuRef}
                             style={{
@@ -583,7 +589,7 @@ export default function ApplicationsPage() {
                               }}
                               onClick={() => {
                                 setOpenMenuId(null);
-                                router.push(`/dashboard/applications/${app.id}`);
+                                router.push(`/dashboard/applications/${app.id}?applicant=${app.applicant_pk}`);
                               }}
                             >
                               <Edit style={{ width: "16px", height: "16px", color: "#2D76B5" }} />

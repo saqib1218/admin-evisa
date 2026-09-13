@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   Link as LinkIcon,
   Upload,
-  Check,
   ChevronDown,
   Trash2,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import PopupModal from "@/components/PopupModal";
 
 interface Applicant {
   id: string;
+  applicant_id: string;
   first_name: string;
   last_name: string;
   email: string;
@@ -30,6 +30,10 @@ interface Applicant {
   passport_expiry_date: string;
   passport_image_url: string;
   personal_photo_url: string;
+  status: string;
+  admin_notes: string | null;
+  visa_document_url: string | null;
+  fee_amount: string | null;
 }
 
 interface Payment {
@@ -69,24 +73,451 @@ const processingLabels: Record<string, string> = {
   urgent: "Urgent (1 hr)",
 };
 
+function ApplicantOutcomeCard({
+  applicationId,
+  applicant,
+  getFullName,
+  onSaved,
+}: {
+  applicationId: string;
+  applicant: Applicant;
+  getFullName: (a: Applicant) => string;
+  onSaved: () => void;
+}) {
+  const [outcomeStatus, setOutcomeStatus] = useState(applicant.status || "pending");
+  const [outcomeDropdownOpen, setOutcomeDropdownOpen] = useState(false);
+  const [messageToApplicant, setMessageToApplicant] = useState("");
+  const [visaDocument, setVisaDocument] = useState<string | null>(null);
+  const [visaDocumentName, setVisaDocumentName] = useState<string>("");
+  const [visaDocumentFile, setVisaDocumentFile] = useState<File | null>(null);
+  const [savingOutcome, setSavingOutcome] = useState(false);
+  const [outcomeMessage, setOutcomeMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleVisaUpload = (file: File) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setVisaDocument(e.target?.result as string);
+      setVisaDocumentName(file.name);
+      setVisaDocumentFile(file);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveOutcome = async () => {
+    if (!outcomeStatus) {
+      setOutcomeMessage({ type: "error", text: "Please select an outcome status" });
+      return;
+    }
+    setSavingOutcome(true);
+    setOutcomeMessage(null);
+    try {
+      await api.updateApplicantOutcome(applicationId, applicant.id, {
+        status: outcomeStatus,
+        notes: messageToApplicant || undefined,
+        visaDocument: visaDocumentFile || null,
+      });
+      setOutcomeMessage({ type: "success", text: "Outcome saved successfully" });
+      setVisaDocument(null);
+      setVisaDocumentName("");
+      setVisaDocumentFile(null);
+      setMessageToApplicant("");
+      onSaved();
+    } catch (err: any) {
+      setOutcomeMessage({ type: "error", text: err?.message || "Failed to save outcome" });
+    } finally {
+      setSavingOutcome(false);
+    }
+  };
+
+  return (
+    <>
+      <div style={{ height: "24px" }} />
+      <div
+        style={{
+          border: "1px solid #D9D9D9",
+          borderRadius: "12px",
+          padding: "4px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "4px",
+        }}
+      >
+        {/* Top header bar */}
+        <div
+          style={{
+            background: "#FAFAF9",
+            borderRadius: "12px 12px 0 0",
+            paddingTop: "16px",
+            paddingRight: "16px",
+            paddingBottom: "16px",
+            paddingLeft: "16px",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 500,
+              fontSize: "24px",
+              lineHeight: "140%",
+              letterSpacing: "-0.02em",
+              color: "#0F0F0F",
+            }}
+          >
+            Traveler outcome — {getFullName(applicant)}
+          </span>
+        </div>
+
+        {/* White content area */}
+        <div
+          style={{
+            background: "#FFFFFF",
+            borderRadius: "0 0 12px 12px",
+            paddingTop: "16px",
+            paddingRight: "16px",
+            paddingBottom: "16px",
+            paddingLeft: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
+          }}
+        >
+          {/* Description text */}
+          <span
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontWeight: 400,
+              fontSize: "16px",
+              lineHeight: "150%",
+              letterSpacing: "-0.01em",
+              color: "#73757C",
+            }}
+          >
+            Decision for this person only. Approve or reject, optionally attach the visa document, and email this applicant. Independent from other applicants on this order.
+          </span>
+
+          {/* Outcome Status label + dropdown */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 500,
+                fontSize: "18px",
+                lineHeight: "140%",
+                letterSpacing: "-0.02em",
+                color: "#0F0F0F",
+              }}
+            >
+              Outcome Status
+            </span>
+            <div style={{ position: "relative", width: "100%" }}>
+              <button
+                onClick={() => setOutcomeDropdownOpen(!outcomeDropdownOpen)}
+                className="flex items-center justify-between"
+                style={{
+                  width: "100%",
+                  height: "48px",
+                  paddingLeft: "16px",
+                  paddingRight: "16px",
+                  borderRadius: "12px",
+                  border: "1px solid #D9D9D9",
+                  background: "#FFFFFF",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "14px",
+                  fontWeight: 400,
+                  color: outcomeStatus ? "#0F0F0F" : "#73757C",
+                }}
+              >
+                {outcomeStatus
+                  ? statusTabs.find((t) => t.key === outcomeStatus)?.label || outcomeStatus
+                  : "Select status"}
+                <ChevronDown
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    color: "#575757",
+                    transform: outcomeDropdownOpen ? "rotate(180deg)" : "none",
+                    transition: "transform 0.2s",
+                  }}
+                />
+              </button>
+              {outcomeDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    right: 0,
+                    marginTop: "4px",
+                    background: "#FFFFFF",
+                    border: "1px solid #D9D9D9",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    zIndex: 10,
+                    overflow: "hidden",
+                  }}
+                >
+                  {statusTabs.map((tab) => (
+                    <div
+                      key={tab.key}
+                      onClick={() => {
+                        setOutcomeStatus(tab.key);
+                        setOutcomeDropdownOpen(false);
+                      }}
+                      className="flex items-center"
+                      style={{
+                        padding: "12px 16px",
+                        cursor: "pointer",
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        color: outcomeStatus === tab.key ? tab.color : "#0F0F0F",
+                        background: outcomeStatus === tab.key ? "#FAFAF9" : "transparent",
+                        borderBottom: "1px solid #F0F0F0",
+                      }}
+                    >
+                      {tab.label}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Message to Applicant label + textarea */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 500,
+                fontSize: "18px",
+                lineHeight: "140%",
+                letterSpacing: "-0.02em",
+                color: "#0F0F0F",
+              }}
+            >
+              Message to Applicant
+            </span>
+            <textarea
+              value={messageToApplicant}
+              onChange={(e) => setMessageToApplicant(e.target.value)}
+              placeholder="Write a message to the applicant..."
+              rows={5}
+              style={{
+                width: "100%",
+                paddingTop: "12px",
+                paddingRight: "16px",
+                paddingBottom: "12px",
+                paddingLeft: "16px",
+                borderRadius: "12px",
+                border: "1px solid #D9D9D9",
+                background: "#FFFFFF",
+                fontFamily: "var(--font-sans)",
+                fontSize: "14px",
+                fontWeight: 400,
+                color: "#0F0F0F",
+                outline: "none",
+                resize: "vertical",
+                lineHeight: "160%",
+              }}
+            />
+          </div>
+
+          {/* Visa or outcome document label + upload area */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontWeight: 500,
+                fontSize: "18px",
+                lineHeight: "140%",
+                letterSpacing: "-0.02em",
+                color: "#0F0F0F",
+              }}
+            >
+              Visa or outcome document (PDF or Image)
+            </span>
+
+            {visaDocument ? (
+              <div
+                style={{
+                  width: "100%",
+                  borderRadius: "16px",
+                  border: "1px solid #D9D9D9",
+                  background: "#FAFAF9",
+                  padding: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}
+              >
+                {visaDocument.match(/^data:image\//) ? (
+                  <img
+                    src={visaDocument}
+                    alt="Document preview"
+                    style={{ width: "120px", height: "80px", objectFit: "cover", borderRadius: "8px" }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "120px",
+                      height: "80px",
+                      borderRadius: "8px",
+                      border: "1px solid #D9D9D9",
+                      background: "#FFFFFF",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "12px", color: "#73757C" }}>PDF</span>
+                  </div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontFamily: "var(--font-sans)", fontSize: "16px", fontWeight: 500, color: "#0F0F0F", margin: 0 }}>
+                    {visaDocumentName || "Document uploaded"}
+                  </p>
+                  <p style={{ fontFamily: "var(--font-sans)", fontSize: "14px", fontWeight: 400, color: "#73757C", marginTop: "4px", margin: 0 }}>
+                    Click the trash icon to replace the document
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setVisaDocument(null);
+                    setVisaDocumentName("");
+                    setVisaDocumentFile(null);
+                  }}
+                  className="flex items-center justify-center"
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    border: "1px solid #D9D9D9",
+                    background: "#FFFFFF",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Trash2 style={{ width: "18px", height: "18px", color: "#575757" }} />
+                </button>
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: "192px",
+                  border: "1px dashed #D9D9D9",
+                  borderRadius: "16px",
+                  padding: "24px",
+                  background: "#FAFAF9",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "12px",
+                }}
+              >
+                <Upload style={{ width: "42px", height: "42px", color: "#575757" }} />
+                <p
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    lineHeight: "150%",
+                    letterSpacing: "-0.01em",
+                    color: "#0F0F0F",
+                    textAlign: "center",
+                    margin: 0,
+                  }}
+                >
+                  Drag your file(s) to start uploading
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "4px" }}>
+                  <div style={{ width: "79px", height: "1px", background: "#D9D9D9" }} />
+                  <span style={{ fontFamily: "var(--font-sans)", fontSize: "12px", fontWeight: 400, color: "#73757C" }}>OR</span>
+                  <div style={{ width: "79px", height: "1px", background: "#D9D9D9" }} />
+                </div>
+                <label
+                  className="flex items-center justify-center"
+                  style={{
+                    width: "160px",
+                    height: "32px",
+                    gap: "8px",
+                    paddingTop: "6px",
+                    paddingRight: "12px",
+                    paddingBottom: "6px",
+                    paddingLeft: "12px",
+                    borderRadius: "999px",
+                    background: "var(--primary)",
+                    color: "#FFFFFF",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Upload style={{ width: "16px", height: "16px" }} />
+                  Upload File
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleVisaUpload(file);
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* Save Outcome button */}
+          <div className="flex justify-end">
+            <button
+              onClick={handleSaveOutcome}
+              disabled={savingOutcome}
+              className="flex items-center justify-center"
+              style={{
+                height: "48px",
+                paddingLeft: "24px",
+                paddingRight: "24px",
+                borderRadius: "999px",
+                border: "none",
+                background: savingOutcome ? "var(--form-border)" : "var(--primary)",
+                color: "#FFFFFF",
+                fontFamily: "var(--font-sans)",
+                fontSize: "16px",
+                fontWeight: 500,
+                cursor: savingOutcome ? "not-allowed" : "pointer",
+              }}
+            >
+              {savingOutcome ? "Saving..." : "Save Outcome"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <PopupModal
+        open={!!outcomeMessage}
+        type={outcomeMessage?.type || "success"}
+        message={outcomeMessage?.text || ""}
+        onClose={() => setOutcomeMessage(null)}
+      />
+    </>
+  );
+}
+
 export default function ApplicationDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const id = params.id as string;
   const fromPage = searchParams.get("from") || "applications";
+  const applicantFilter = searchParams.get("applicant") || null;
 
   const [details, setDetails] = useState<ApplicationDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [outcomeStatus, setOutcomeStatus] = useState("");
-  const [outcomeDropdownOpen, setOutcomeDropdownOpen] = useState(false);
-  const [messageToApplicant, setMessageToApplicant] = useState("");
-  const [visaDocument, setVisaDocument] = useState<string | null>(null);
-  const [visaDocumentName, setVisaDocumentName] = useState<string>("");
-  const [visaDocumentFile, setVisaDocumentFile] = useState<File | null>(null);
-  const [sendEmail, setSendEmail] = useState(false);
-  const [savingOutcome, setSavingOutcome] = useState(false);
-  const [outcomeMessage, setOutcomeMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (id) fetchDetails();
@@ -96,9 +527,6 @@ export default function ApplicationDetailsPage() {
     try {
       const data = await api.getApplicationDetails(id);
       setDetails(data);
-      if (data?.status) {
-        setOutcomeStatus(data.status);
-      }
     } catch (err) {
       console.error("Failed to fetch application details:", err);
     } finally {
@@ -123,43 +551,6 @@ export default function ApplicationDetailsPage() {
 
   const getFullName = (applicant: Applicant) => {
     return `${applicant.first_name || ""} ${applicant.last_name || ""}`.trim() || "N/A";
-  };
-
-  const handleVisaUpload = (file: File) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setVisaDocument(e.target?.result as string);
-      setVisaDocumentName(file.name);
-      setVisaDocumentFile(file);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveOutcome = async () => {
-    if (!outcomeStatus) {
-      setOutcomeMessage({ type: "error", text: "Please select an outcome status" });
-      return;
-    }
-    setSavingOutcome(true);
-    setOutcomeMessage(null);
-    try {
-      await api.updateOutcome(id, {
-        status: outcomeStatus,
-        notes: messageToApplicant || undefined,
-        visaDocument: visaDocumentFile || null,
-      });
-      setOutcomeMessage({ type: "success", text: "Outcome saved successfully" });
-      setVisaDocument(null);
-      setVisaDocumentName("");
-      setVisaDocumentFile(null);
-      setMessageToApplicant("");
-      fetchDetails();
-    } catch (err: any) {
-      setOutcomeMessage({ type: "error", text: err?.message || "Failed to save outcome" });
-    } finally {
-      setSavingOutcome(false);
-    }
   };
 
   if (loading) {
@@ -188,9 +579,13 @@ export default function ApplicationDetailsPage() {
     );
   }
 
-  const applicant = details.applicants?.[0] || null;
+  const allApplicants = details.applicants || [];
+  const applicants = applicantFilter
+    ? allApplicants.filter((a) => a.id === applicantFilter)
+    : allApplicants;
+  const applicant = applicants[0] || null;
   const payment = details.payment;
-  const currentStatus = details.status || "pending";
+  const currentStatus = applicant?.status || details.status || "pending";
 
   return (
     <div style={{ paddingTop: "24px", paddingBottom: "24px", paddingLeft: "36px", paddingRight: "36px" }}>
@@ -325,7 +720,7 @@ export default function ApplicationDetailsPage() {
                 color: "#0F0F0F",
               }}
             >
-              {details.applicant_id}
+              {applicant?.applicant_id || details.applicant_id}
             </span>
           </div>
 
@@ -625,7 +1020,8 @@ export default function ApplicationDetailsPage() {
         {/* 24px gap */}
         <div style={{ height: "24px" }} />
 
-        {/* Applicant info card */}
+        {/* Applicant info cards — one per traveller */}
+        {applicants.map((applicant, idx) => (
         <div
           style={{
             border: "1px solid #D9D9D9",
@@ -638,6 +1034,7 @@ export default function ApplicationDetailsPage() {
         >
           {/* Top header bar with applicant name */}
           <div
+            className="flex items-center justify-between"
             style={{
               background: "#FAFAF9",
               borderRadius: "12px 12px 0 0",
@@ -657,8 +1054,40 @@ export default function ApplicationDetailsPage() {
                 color: "#0F0F0F",
               }}
             >
-              {applicant ? getFullName(applicant) : "Applicant"}
+              Applicant {idx + 1} — {applicant ? getFullName(applicant) : "N/A"}
             </span>
+            <div className="flex items-center" style={{ gap: "12px" }}>
+              {applicant?.fee_amount && (
+                <span
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    color: "#575757",
+                  }}
+                >
+                  {formatCurrency(applicant.fee_amount)}
+                </span>
+              )}
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  paddingTop: "4px",
+                  paddingBottom: "4px",
+                  paddingLeft: "12px",
+                  paddingRight: "12px",
+                  borderRadius: "999px",
+                  background: statusTabs.find((t) => t.key === applicant?.status)?.color || "#73757C",
+                  fontFamily: "var(--font-sans)",
+                  fontWeight: 500,
+                  fontSize: "13px",
+                  color: "#FFFFFF",
+                }}
+              >
+                {statusTabs.find((t) => t.key === applicant?.status)?.label || applicant?.status || "Pending"}
+              </span>
+            </div>
           </div>
 
           {/* White content area */}
@@ -735,7 +1164,7 @@ export default function ApplicationDetailsPage() {
               </div>
             </div>
 
-            {/* Row 4: Passport Expires */}
+            {/* Row 4: Passport Expires | Email */}
             <div className="flex" style={{ gap: "24px" }}>
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
@@ -743,6 +1172,26 @@ export default function ApplicationDetailsPage() {
                 </span>
                 <span style={{ fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "18px", lineHeight: "140%", letterSpacing: "-0.02em", color: "#1B1B1B" }}>
                   {applicant ? formatDate(applicant.passport_expiry_date) : "N/A"}
+                </span>
+              </div>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
+                  Email:
+                </span>
+                <span style={{ fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "18px", lineHeight: "140%", letterSpacing: "-0.02em", color: "#1B1B1B" }}>
+                  {applicant?.email || "N/A"}
+                </span>
+              </div>
+            </div>
+
+            {/* Row 5: Phone */}
+            <div className="flex" style={{ gap: "24px" }}>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
+                  Phone:
+                </span>
+                <span style={{ fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "18px", lineHeight: "140%", letterSpacing: "-0.02em", color: "#1B1B1B" }}>
+                  {applicant?.phone || "N/A"}
                 </span>
               </div>
               <div style={{ flex: 1 }} />
@@ -901,416 +1350,22 @@ export default function ApplicationDetailsPage() {
             </div>
           </div>
         </div>
+        ))}
 
         {/* 24px gap */}
         <div style={{ height: "24px" }} />
 
-        {/* Traveler Outcome card */}
-        <div
-          style={{
-            border: "1px solid #D9D9D9",
-            borderRadius: "12px",
-            padding: "4px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "4px",
-          }}
-        >
-          {/* Top header bar */}
-          <div
-            style={{
-              background: "#FAFAF9",
-              borderRadius: "12px 12px 0 0",
-              paddingTop: "16px",
-              paddingRight: "16px",
-              paddingBottom: "16px",
-              paddingLeft: "16px",
-            }}
-          >
-            <span
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 500,
-                fontSize: "24px",
-                lineHeight: "140%",
-                letterSpacing: "-0.02em",
-                color: "#0F0F0F",
-              }}
-            >
-              Traveler outcome — {applicant ? getFullName(applicant) : "Applicant"}
-            </span>
-          </div>
-
-          {/* White content area */}
-          <div
-            style={{
-              background: "#FFFFFF",
-              borderRadius: "0 0 12px 12px",
-              paddingTop: "16px",
-              paddingRight: "16px",
-              paddingBottom: "16px",
-              paddingLeft: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "20px",
-            }}
-          >
-            {/* Description text */}
-            <span
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontWeight: 400,
-                fontSize: "16px",
-                lineHeight: "150%",
-                letterSpacing: "-0.01em",
-                color: "#73757C",
-              }}
-            >
-              Decision for this person only. Approve or reject, optionally attach the visa document, and email the customer in one step. Order-wide status is above.
-            </span>
-
-            {/* Outcome Status label + dropdown */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 500,
-                  fontSize: "18px",
-                  lineHeight: "140%",
-                  letterSpacing: "-0.02em",
-                  color: "#0F0F0F",
-                }}
-              >
-                Outcome Status
-              </span>
-              <div style={{ position: "relative", width: "100%" }}>
-                <button
-                  onClick={() => setOutcomeDropdownOpen(!outcomeDropdownOpen)}
-                  className="flex items-center justify-between"
-                  style={{
-                    width: "100%",
-                    height: "48px",
-                    paddingLeft: "16px",
-                    paddingRight: "16px",
-                    borderRadius: "12px",
-                    border: "1px solid #D9D9D9",
-                    background: "#FFFFFF",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "14px",
-                    fontWeight: 400,
-                    color: outcomeStatus ? "#0F0F0F" : "#73757C",
-                  }}
-                >
-                  {outcomeStatus
-                    ? statusTabs.find((t) => t.key === outcomeStatus)?.label || outcomeStatus
-                    : "Select status"}
-                  <ChevronDown
-                    style={{
-                      width: "20px",
-                      height: "20px",
-                      color: "#575757",
-                      transform: outcomeDropdownOpen ? "rotate(180deg)" : "none",
-                      transition: "transform 0.2s",
-                    }}
-                  />
-                </button>
-                {outcomeDropdownOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "100%",
-                      left: 0,
-                      right: 0,
-                      marginTop: "4px",
-                      background: "#FFFFFF",
-                      border: "1px solid #D9D9D9",
-                      borderRadius: "12px",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                      zIndex: 10,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {statusTabs.map((tab) => (
-                      <div
-                        key={tab.key}
-                        onClick={() => {
-                          setOutcomeStatus(tab.key);
-                          setOutcomeDropdownOpen(false);
-                        }}
-                        className="flex items-center"
-                        style={{
-                          padding: "12px 16px",
-                          cursor: "pointer",
-                          fontFamily: "var(--font-sans)",
-                          fontSize: "14px",
-                          fontWeight: 400,
-                          color: outcomeStatus === tab.key ? tab.color : "#0F0F0F",
-                          background: outcomeStatus === tab.key ? "#FAFAF9" : "transparent",
-                          borderBottom: "1px solid #F0F0F0",
-                        }}
-                      >
-                        {tab.label}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Message to Applicant label + textarea */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 500,
-                  fontSize: "18px",
-                  lineHeight: "140%",
-                  letterSpacing: "-0.02em",
-                  color: "#0F0F0F",
-                }}
-              >
-                Message to Applicant
-              </span>
-              <textarea
-                value={messageToApplicant}
-                onChange={(e) => setMessageToApplicant(e.target.value)}
-                placeholder="Write a message to the applicant..."
-                rows={5}
-                style={{
-                  width: "100%",
-                  paddingTop: "12px",
-                  paddingRight: "16px",
-                  paddingBottom: "12px",
-                  paddingLeft: "16px",
-                  borderRadius: "12px",
-                  border: "1px solid #D9D9D9",
-                  background: "#FFFFFF",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "14px",
-                  fontWeight: 400,
-                  color: "#0F0F0F",
-                  outline: "none",
-                  resize: "vertical",
-                  lineHeight: "160%",
-                }}
-              />
-            </div>
-
-            {/* Visa or outcome document label + upload area */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 500,
-                  fontSize: "18px",
-                  lineHeight: "140%",
-                  letterSpacing: "-0.02em",
-                  color: "#0F0F0F",
-                }}
-              >
-                Visa or outcome document (PDF or Image)
-              </span>
-
-              {visaDocument ? (
-                <div
-                  style={{
-                    width: "100%",
-                    borderRadius: "16px",
-                    border: "1px solid #D9D9D9",
-                    background: "#FAFAF9",
-                    padding: "16px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "16px",
-                  }}
-                >
-                  {visaDocument.match(/^data:image\//) ? (
-                    <img
-                      src={visaDocument}
-                      alt="Document preview"
-                      style={{ width: "120px", height: "80px", objectFit: "cover", borderRadius: "8px" }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "120px",
-                        height: "80px",
-                        borderRadius: "8px",
-                        border: "1px solid #D9D9D9",
-                        background: "#FFFFFF",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <span style={{ fontFamily: "var(--font-sans)", fontSize: "12px", color: "#73757C" }}>PDF</span>
-                    </div>
-                  )}
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontFamily: "var(--font-sans)", fontSize: "16px", fontWeight: 500, color: "#0F0F0F", margin: 0 }}>
-                      {visaDocumentName || "Document uploaded"}
-                    </p>
-                    <p style={{ fontFamily: "var(--font-sans)", fontSize: "14px", fontWeight: 400, color: "#73757C", marginTop: "4px", margin: 0 }}>
-                      Click the trash icon to replace the document
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setVisaDocument(null);
-                      setVisaDocumentName("");
-                      setVisaDocumentFile(null);
-                    }}
-                    className="flex items-center justify-center"
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      border: "1px solid #D9D9D9",
-                      background: "#FFFFFF",
-                      cursor: "pointer",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <Trash2 style={{ width: "18px", height: "18px", color: "#575757" }} />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    height: "192px",
-                    border: "1px dashed #D9D9D9",
-                    borderRadius: "16px",
-                    padding: "24px",
-                    background: "#FAFAF9",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "12px",
-                  }}
-                >
-                  <Upload style={{ width: "42px", height: "42px", color: "#575757" }} />
-                  <p
-                    style={{
-                      fontFamily: "var(--font-sans)",
-                      fontSize: "16px",
-                      fontWeight: 400,
-                      lineHeight: "150%",
-                      letterSpacing: "-0.01em",
-                      color: "#0F0F0F",
-                      textAlign: "center",
-                      margin: 0,
-                    }}
-                  >
-                    Drag your file(s) to start uploading
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "4px" }}>
-                    <div style={{ width: "79px", height: "1px", background: "#D9D9D9" }} />
-                    <span style={{ fontFamily: "var(--font-sans)", fontSize: "12px", fontWeight: 400, color: "#73757C" }}>OR</span>
-                    <div style={{ width: "79px", height: "1px", background: "#D9D9D9" }} />
-                  </div>
-                  <label
-                    className="flex items-center justify-center"
-                    style={{
-                      width: "160px",
-                      height: "32px",
-                      gap: "8px",
-                      paddingTop: "6px",
-                      paddingRight: "12px",
-                      paddingBottom: "6px",
-                      paddingLeft: "12px",
-                      borderRadius: "999px",
-                      background: "var(--primary)",
-                      color: "#FFFFFF",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Upload style={{ width: "16px", height: "16px" }} />
-                    Upload File
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      style={{ display: "none" }}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleVisaUpload(file);
-                      }}
-                    />
-                  </label>
-                </div>
-              )}
-            </div>
-
-            {/* Send email checkbox */}
-            <div className="flex items-start" style={{ gap: "12px" }}>
-              <div
-                onClick={() => setSendEmail(!sendEmail)}
-                style={{
-                  width: "24px",
-                  height: "24px",
-                  borderRadius: "6px",
-                  border: sendEmail ? "2px solid var(--primary)" : "1px solid #D9D9D9",
-                  background: sendEmail ? "var(--primary)" : "#FFFFFF",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  cursor: "pointer",
-                  marginTop: "2px",
-                }}
-              >
-                {sendEmail && <Check style={{ width: "16px", height: "16px", color: "#FFFFFF" }} />}
-              </div>
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontWeight: 400,
-                  fontSize: "14px",
-                  lineHeight: "160%",
-                  color: "#0F0F0F",
-                }}
-              >
-                Send email to customer
-              </span>
-            </div>
-
-            {/* Save Outcome button */}
-            <div className="flex justify-end">
-              <button
-                onClick={handleSaveOutcome}
-                disabled={savingOutcome}
-                className="flex items-center justify-center"
-                style={{
-                  height: "48px",
-                  paddingLeft: "24px",
-                  paddingRight: "24px",
-                  borderRadius: "999px",
-                  border: "none",
-                  background: savingOutcome ? "var(--form-border)" : "var(--primary)",
-                  color: "#FFFFFF",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "16px",
-                  fontWeight: 500,
-                  cursor: savingOutcome ? "not-allowed" : "pointer",
-                }}
-              >
-                {savingOutcome ? "Saving..." : "Save Outcome"}
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Traveler outcome cards — one independent decision per applicant */}
+        {applicants.map((a) => (
+          <ApplicantOutcomeCard
+            key={a.id}
+            applicationId={id}
+            applicant={a}
+            getFullName={getFullName}
+            onSaved={fetchDetails}
+          />
+        ))}
       </div>
-
-      <PopupModal
-        open={!!outcomeMessage}
-        type={outcomeMessage?.type || "success"}
-        message={outcomeMessage?.text || ""}
-        onClose={() => setOutcomeMessage(null)}
-      />
     </div>
   );
 }

@@ -14,12 +14,17 @@ import NotificationBell from "@/components/NotificationBell/NotificationBell";
 
 interface Transaction {
   id: string;
-  reference_number: string;
   applicant_id: string;
-  status: string;
+  order_applicant_id: string;
+  reference_number: string;
   processing_type: string;
   created_at: string;
-  customer_name: string;
+  applicant_pk: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  applicant_status: string;
+  fee_amount: string | null;
   grand_total: string;
   payment_status: boolean;
 }
@@ -34,6 +39,7 @@ const statusConfig: Record<string, { bg: string; label: string }> = {
   pending: { bg: "#D9D9D9", label: "Pending" },
   rejected: { bg: "#DF1C41", label: "Rejected" },
   accepted: { bg: "#28806F", label: "Accepted" },
+  approved: { bg: "#28806F", label: "Approved" },
   inprogress: { bg: "#2D76B5", label: "In Progress" },
 };
 
@@ -100,11 +106,11 @@ export default function PaymentsPage() {
   }, [fetchStats]);
 
   const getCustomerName = (tx: Transaction) => {
-    return tx.customer_name || tx.applicant_id || "Unknown";
+    return `${tx.first_name || ""} ${tx.last_name || ""}`.trim() || "Unknown";
   };
 
   const getTotal = (tx: Transaction) => {
-    const total = parseFloat(tx.grand_total || "0");
+    const total = parseFloat(tx.fee_amount || tx.grand_total || "0");
     return `$${total.toFixed(2)}`;
   };
 
@@ -467,9 +473,9 @@ export default function PaymentsPage() {
                 </tr>
               ) : (
                 transactions.map((tx) => {
-                  const statusInfo = getStatusStyle(tx.status);
+                  const statusInfo = getStatusStyle(tx.applicant_status);
                   return (
-                    <tr key={tx.id} style={{ borderBottom: "1px solid #E5E5E5" }}>
+                    <tr key={tx.applicant_pk} style={{ borderBottom: "1px solid #E5E5E5" }}>
                       {/* Reference */}
                       <td
                         style={{
@@ -485,7 +491,7 @@ export default function PaymentsPage() {
                           color: "#2D76B5",
                         }}
                       >
-                        {tx.reference_number || tx.applicant_id}
+                        {tx.reference_number || tx.order_applicant_id}
                       </td>
                       {/* Applicant Id */}
                       <td

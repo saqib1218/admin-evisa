@@ -182,6 +182,21 @@ export const api = {
     });
   },
 
+  async updateApplicantOutcome(
+    id: string,
+    applicantId: string,
+    data: { status: string; notes?: string; visaDocument?: File | null }
+  ) {
+    const formData = new FormData();
+    formData.append("status", data.status);
+    if (data.notes) formData.append("notes", data.notes);
+    if (data.visaDocument) formData.append("visaDocument", data.visaDocument);
+    return requestFormData(`/applications/${id}/applicants/${applicantId}/outcome`, {
+      method: "PATCH",
+      body: formData,
+    });
+  },
+
   async updatePaymentStatus(id: string, paymentStatus: boolean, transactionId?: string) {
     return request(`/applications/${id}/payment`, {
       method: "PATCH",

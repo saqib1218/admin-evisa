@@ -21,13 +21,20 @@ import NotificationBell from "@/components/NotificationBell/NotificationBell";
 interface Application {
   id: string;
   applicant_id: string;
+  order_applicant_id: string;
   reference_number: string;
-  status: string;
   processing_type: string;
   created_at: string;
   submit_date: string | null;
-  customer_name: string;
+  applicant_pk: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  applicant_status: string;
+  fee_amount: string | null;
   grand_total: string;
+  payment_status: boolean;
+  applicant_count: string;
 }
 
 interface DashboardStats {
@@ -41,6 +48,7 @@ const statusConfig: Record<string, { bg: string; label: string }> = {
   pending: { bg: "#D9D9D9", label: "Pending" },
   rejected: { bg: "#DF1C41", label: "Rejected" },
   accepted: { bg: "#28806F", label: "Accepted" },
+  approved: { bg: "#28806F", label: "Approved" },
   inprogress: { bg: "#2D76B5", label: "In Progress" },
 };
 
@@ -187,11 +195,11 @@ export default function DashboardPage() {
   };
 
   const getCustomerName = (app: Application) => {
-    return app.customer_name || app.applicant_id || "Unknown";
+    return `${app.first_name || ""} ${app.last_name || ""}`.trim() || "Unknown";
   };
 
   const getTotal = (app: Application) => {
-    const total = parseFloat(app.grand_total || "0");
+    const total = parseFloat(app.fee_amount || app.grand_total || "0");
     return `$${total.toFixed(2)}`;
   };
 
@@ -840,7 +848,7 @@ export default function DashboardPage() {
           <table style={{ width: "100%", borderCollapse: "collapse", background: "#FFFFFF", borderRadius: "0 0 12px 12px" }}>
             <thead>
               <tr>
-                {["Reference", "Applicant Id", "Customer", "Status", "Total", "Actions"].map((header) => (
+                {["Reference", "Applicant Id", "Customer", "Payment", "Status", "Total", "Actions"].map((header) => (
                   <th
                     key={header}
                     style={{
@@ -867,7 +875,7 @@ export default function DashboardPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: "48px", textAlign: "center" }}>
+                  <td colSpan={7} style={{ padding: "48px", textAlign: "center" }}>
                     <div
                       className="flex items-center justify-center"
                       style={{ background: "#FFFFFF" }}
@@ -889,7 +897,7 @@ export default function DashboardPage() {
               ) : applications.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     style={{
                       padding: "48px",
                       textAlign: "center",
@@ -904,9 +912,9 @@ export default function DashboardPage() {
                 </tr>
               ) : (
                 applications.map((app) => {
-                  const statusInfo = getStatusStyle(app.status);
+                  const statusInfo = getStatusStyle(app.applicant_status);
                   return (
-                    <tr key={app.id} style={{ borderBottom: "1px solid #E5E5E5" }}>
+                    <tr key={app.applicant_pk} style={{ borderBottom: "1px solid #E5E5E5" }}>
                       {/* Reference */}
                       <td
                         style={{
@@ -922,7 +930,7 @@ export default function DashboardPage() {
                           color: "#2D76B5",
                         }}
                       >
-                        {app.reference_number || app.applicant_id}
+                        {app.reference_number || app.order_applicant_id}
                       </td>
                       {/* Applicant Id */}
                       <td
@@ -957,6 +965,36 @@ export default function DashboardPage() {
                         }}
                       >
                         {getCustomerName(app)}
+                      </td>
+                      {/* Payment */}
+                      <td
+                        style={{
+                          paddingTop: "12px",
+                          paddingBottom: "12px",
+                          paddingLeft: "20px",
+                          paddingRight: "20px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            paddingTop: "4px",
+                            paddingBottom: "4px",
+                            paddingLeft: "12px",
+                            paddingRight: "12px",
+                            borderRadius: "999px",
+                            background: app.payment_status ? "#28806F" : "#F97316",
+                            fontFamily: "var(--font-sans)",
+                            fontWeight: 500,
+                            fontSize: "12px",
+                            lineHeight: "160%",
+                            letterSpacing: "0em",
+                            color: "#FFFFFF",
+                          }}
+                        >
+                          {app.payment_status ? "Paid" : "Unpaid"}
+                        </span>
                       </td>
                       {/* Status badge */}
                       <td
@@ -1016,7 +1054,7 @@ export default function DashboardPage() {
                         }}
                       >
                         <button
-                          onClick={() => setOpenMenuId(openMenuId === app.id ? null : app.id)}
+                          onClick={() => setOpenMenuId(openMenuId === app.applicant_pk ? null : app.applicant_pk)}
                           style={{
                             background: "none",
                             border: "none",
@@ -1028,7 +1066,7 @@ export default function DashboardPage() {
                         >
                           <MoreVertical style={{ width: "20px", height: "20px", color: "#575757" }} />
                         </button>
-                        {openMenuId === app.id && (
+                        {openMenuId === app.applicant_pk && (
                           <div
                             ref={menuRef}
                             style={{
@@ -1054,7 +1092,7 @@ export default function DashboardPage() {
                               }}
                               onClick={() => {
                                 setOpenMenuId(null);
-                                router.push(`/dashboard/applications/${app.id}?from=dashboard`);
+                                router.push(`/dashboard/applications/${app.id}?from=dashboard&applicant=${app.applicant_pk}`);
                               }}
                             >
                               <Edit style={{ width: "16px", height: "16px", color: "#2D76B5" }} />
