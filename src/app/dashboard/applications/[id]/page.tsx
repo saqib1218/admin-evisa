@@ -34,6 +34,7 @@ interface Applicant {
   admin_notes: string | null;
   visa_document_url: string | null;
   fee_amount: string | null;
+  job: string | null;
 }
 
 interface Payment {
@@ -1184,7 +1185,7 @@ export default function ApplicationDetailsPage() {
               </div>
             </div>
 
-            {/* Row 5: Phone */}
+            {/* Row 5: Phone | Job */}
             <div className="flex" style={{ gap: "24px" }}>
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
@@ -1194,7 +1195,14 @@ export default function ApplicationDetailsPage() {
                   {applicant?.phone || "N/A"}
                 </span>
               </div>
-              <div style={{ flex: 1 }} />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
+                  Job / Profession:
+                </span>
+                <span style={{ fontFamily: "var(--font-sans)", fontWeight: 500, fontSize: "18px", lineHeight: "140%", letterSpacing: "-0.02em", color: "#1B1B1B" }}>
+                  {applicant?.job || "N/A"}
+                </span>
+              </div>
             </div>
 
             {/* Uploaded Files section */}
