@@ -14,6 +14,12 @@ import {
 import { api } from "@/utils/api";
 import PopupModal from "@/components/PopupModal";
 
+// NOTE: Passport, Passport image, and Your photo steps are temporarily disabled on the frontend
+// application form, so this data is no longer collected from applicants. The admin UI fields
+// below that display this data are kept intact (commented out via this flag) so they can be
+// re-enabled later by flipping ENABLE_PASSPORT_PHOTO_FIELDS to true.
+const ENABLE_PASSPORT_PHOTO_FIELDS = false;
+
 interface Applicant {
   id: string;
   applicant_id: string;
@@ -1105,7 +1111,8 @@ export default function ApplicationDetailsPage() {
               gap: "16px",
             }}
           >
-            {/* Row 1: Passport Number | Nationality */}
+            {/* Row 1: Passport Number | Nationality — disabled/commented out (see ENABLE_PASSPORT_PHOTO_FIELDS) */}
+            {ENABLE_PASSPORT_PHOTO_FIELDS && (
             <div className="flex" style={{ gap: "24px" }}>
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
@@ -1124,6 +1131,7 @@ export default function ApplicationDetailsPage() {
                 </span>
               </div>
             </div>
+            )}
 
             {/* Row 2: Gender | Date of Birth */}
             <div className="flex" style={{ gap: "24px" }}>
@@ -1155,6 +1163,8 @@ export default function ApplicationDetailsPage() {
                   {applicant?.country_of_birth || "N/A"}
                 </span>
               </div>
+              {/* Passport Issued — disabled/commented out (see ENABLE_PASSPORT_PHOTO_FIELDS) */}
+              {ENABLE_PASSPORT_PHOTO_FIELDS && (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
                   Passport Issued:
@@ -1163,10 +1173,13 @@ export default function ApplicationDetailsPage() {
                   {applicant ? formatDate(applicant.passport_issue_date) : "N/A"}
                 </span>
               </div>
+              )}
             </div>
 
             {/* Row 4: Passport Expires | Email */}
             <div className="flex" style={{ gap: "24px" }}>
+              {/* Passport Expires — disabled/commented out (see ENABLE_PASSPORT_PHOTO_FIELDS) */}
+              {ENABLE_PASSPORT_PHOTO_FIELDS && (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
                   Passport Expires:
@@ -1175,6 +1188,7 @@ export default function ApplicationDetailsPage() {
                   {applicant ? formatDate(applicant.passport_expiry_date) : "N/A"}
                 </span>
               </div>
+              )}
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
                   Email:
@@ -1195,6 +1209,8 @@ export default function ApplicationDetailsPage() {
                   {applicant?.phone || "N/A"}
                 </span>
               </div>
+              {/* Job / Profession — disabled/commented out (see ENABLE_PASSPORT_PHOTO_FIELDS) */}
+              {ENABLE_PASSPORT_PHOTO_FIELDS && (
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
                   Job / Profession:
@@ -1203,9 +1219,11 @@ export default function ApplicationDetailsPage() {
                   {applicant?.job || "N/A"}
                 </span>
               </div>
+              )}
             </div>
 
-            {/* Uploaded Files section */}
+            {/* Uploaded Files section — disabled/commented out (see ENABLE_PASSPORT_PHOTO_FIELDS) */}
+            {ENABLE_PASSPORT_PHOTO_FIELDS && (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <span style={{ fontFamily: "var(--font-sans)", fontWeight: 400, fontSize: "16px", lineHeight: "150%", letterSpacing: "-0.01em", color: "#73757C" }}>
                 Uploaded Files:
@@ -1356,6 +1374,7 @@ export default function ApplicationDetailsPage() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
         ))}
