@@ -14,11 +14,8 @@ import {
 import { api } from "@/utils/api";
 import PopupModal from "@/components/PopupModal";
 
-// NOTE: Passport, Passport image, and Your photo steps are temporarily disabled on the frontend
-// application form, so this data is no longer collected from applicants. The admin UI fields
-// below that display this data are kept intact (commented out via this flag) so they can be
-// re-enabled later by flipping ENABLE_PASSPORT_PHOTO_FIELDS to true.
-const ENABLE_PASSPORT_PHOTO_FIELDS = false;
+// NOTE: Passport, Passport image, and Your photo steps are re-enabled per request.
+const ENABLE_PASSPORT_PHOTO_FIELDS = true;
 
 interface Applicant {
   id: string;
