@@ -50,6 +50,8 @@ interface Payment {
   processing_fee_per_applicant: string;
   fee_total: string;
   processing_total: string;
+  payment_provider?: string | null;
+  revolut_order_id?: string | null;
 }
 
 interface ApplicationDetails {
@@ -944,7 +946,7 @@ export default function ApplicationDetailsPage() {
                     color: "#1B1B1B",
                   }}
                 >
-                  {payment?.transaction_id || details.reference_number || "N/A"}
+                  {payment?.revolut_order_id || payment?.transaction_id || details.reference_number || "N/A"}
                 </span>
               </div>
               <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -970,7 +972,7 @@ export default function ApplicationDetailsPage() {
                     color: "#1B1B1B",
                   }}
                 >
-                  Stripe
+                  {payment?.payment_provider === "revolut" ? "Revolut" : payment ? "Stripe" : "N/A"}
                 </span>
               </div>
             </div>
